@@ -1,0 +1,30 @@
+
+This file motivates a number of the design decisions I (hunse) made when
+implementing the Nengo API.
+
+Multiple timescales
+-------------------
+
+I wanted to have the model support multiple timescales. Specifically, I was
+thinking that we may want to use neuron models that require a small time-step
+for ODE stability (e.g. FitzHugh-Nagumo or Izhikevich), but that these
+neuron models won't spike any faster than LIF models, so we won't need to
+update the neuron-neuron connections as frequently. For example, we may
+run the neuron models with a 100 us time-step, but only update the connections
+with a 1 ms time-step.
+
+To achieve this, I use both "run" and "tick" methods. Some objects contain both
+of these methods, and some only contain one or the other. The "run" method is
+concerned with the actual simulation of various objects, specifically the
+neuron models, nodes, and probes. The "run" method takes an end time as input,
+and runs the respective object until it reaches that time, using the object's
+internal time-step. This means that run methods will typically contain loops
+to run until the object is at the current time.
+
+The "tick" methods, on the other hand, are concerned with connections between
+objects. Connections are all handled at the model level, and are all simulated
+using the model time-step. The "tick" method of an object takes in the model
+time-step as a parameter, and updates connection-related model elements.
+Typically, this involves copying data from the output of some object
+(e.g., a connection) to the input of another object (e.g. an ensemble, node,
+or probe).
